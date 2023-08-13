@@ -7,10 +7,10 @@ from aiogram.dispatcher.filters import Text
 from aiogram.types import ReplyKeyboardRemove
 from mysql_database import mysqldb
 from sending_an_order import send_mail
-from basket import Basket
+from handlers.basket import Basket
 
 class FSMOM(StatesGroup):
-    order = State()
+    # order = State()
     phone_number = State()
     table_number = State()
 
@@ -26,8 +26,8 @@ class OrderMachine:
 
     # запускаємо машину і запитуємо замовлення
     async def on_start(self, message: types.Message) -> None:
-        await FSMOM.order.set()
-        await bot.send_message(message.from_user.id, text='Введіть замoвлення')
+        await FSMOM.phone_number.set()
+        await bot.send_message(message.from_user.id, text='Введіть номер телефону', reply_markup=omkb.keyboard)
 
     #перериваємо (відключає) машину
     async def stop_fsm(self, message: types.Message, state: FSMContext) -> None:
@@ -38,11 +38,12 @@ class OrderMachine:
         await message.reply('OK', reply_markup=ReplyKeyboardRemove())
 
     #приймаємо замовлення та запитуємо номер телефону
-    async def load_order(self, message: types.Message, state: FSMContext) -> None:
-        async with state.proxy() as data:
-            data['order'] = message.text
-        await FSMOM.next()
-        await message.reply('Введіть номер телефону', reply_markup=omkb.keyboard)
+
+    # async def load_order(self, message: types.Message, state: FSMContext) -> None:
+    #     async with state.proxy() as data:
+    #         data['order'] = message.text
+    #     await FSMOM.next()
+    #     await message.reply('Введіть номер телефону', reply_markup=omkb.keyboard)
 
     # приймаємо номер телефону та запитуємо номер столу
     async def load_phone_number(self, message: types.Message, state: FSMContext) -> None:
@@ -62,10 +63,14 @@ class OrderMachine:
         ID = int(message.from_user.id)  # отримуємо телеграм_id замоника
         tel_name = message.from_user.full_name  # отримуємо телеграм імя
 
-
+        order_names = str(Basket.Cart)
+        phone_numbers = res[1]
+        table_numbers = res[-1]
+        print(order_names, phone_numbers, table_numbers, sep='\n')
 
         await bot.send_message(message.from_user.id, text=f'ваше замовлення: {res[0]}\nНомер столу: {res[-1]}', )
-        await mysqldb.sql_add_command(state=state, ID=ID, tel_name=tel_name) # записуемо дані в бд
+        await mysqldb.sql_add_command(ID=ID, tel_name=tel_name, order_name=order_names, phone_number=phone_numbers,
+                                      table_number=table_numbers)  # записуемо дані в бд
         await message.answer('Замовлення прийняте\nСмачного',reply_markup=ReplyKeyboardRemove())
         await send_mail.send_email(state) #выдправляє заказ на пошту
         await state.finish()
@@ -74,7 +79,7 @@ class OrderMachine:
         dp.register_message_handler(self.on_start, commands=['order'], state=None)
         dp.register_message_handler(self.stop_fsm, state='*', commands=['stop'])
         dp.register_message_handler(self.stop_fsm, Text(equals=['stop'], ignore_case=True), state='*')
-        dp.register_message_handler(self.load_order, state=FSMOM.order)
+        # dp.register_message_handler(self.load_order, state=FSMOM.order)
         dp.register_message_handler(self.load_phone_number, state=FSMOM.phone_number,
                                     content_types=types.ContentTypes.CONTACT)
         dp.register_message_handler(self.load_table_number, state=FSMOM.table_number)

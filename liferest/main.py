@@ -19,7 +19,6 @@ def main():
     menus.run_handlers(dp)
     order_machines.run_handlers(dp)
     baskets.run_handlers(dp)
-
     executor.start_polling(dp, skip_updates=True, on_startup=on_startup)
 
 

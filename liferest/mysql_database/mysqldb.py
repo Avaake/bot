@@ -1,7 +1,7 @@
 import mysql.connector
 from config import bot
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
-from handlers import basket
+
 
 def get_db_start() -> None:
     global mydb, mycursor
@@ -108,10 +108,10 @@ async def menu_main_dishes(from_user_id):
 
 
 
-async def sql_add_command(state, ID, tel_name,basc):
-    async with state.proxy() as data:
-        mycursor.execute(
-            'INSERT INTO customer_order (telegram_ID, telegram_name, order_name, phone_number, table_number) VALUES (%s, %s, %s, %s, %s)',
-            (ID, tel_name, *tuple(data.values()))
-        )
-        mydb.commit()
+async def sql_add_command(ID, tel_name,order_name, phone_number, table_number):
+    # async with state.proxy() as data:
+    mycursor.execute(
+        'INSERT INTO customer_order (telegram_ID, telegram_name, order_name, phone_number, table_number) VALUES (%s, %s, %s, %s, %s)',
+        (ID, tel_name, order_name, phone_number, table_number)
+    )
+    mydb.commit()
